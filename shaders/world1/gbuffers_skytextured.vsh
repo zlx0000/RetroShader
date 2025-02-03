@@ -23,7 +23,7 @@ float rnd(float n)
 {
     int i = floatBitsToInt(n);
     int exponent = ((i >> 23) & 0xFF) - 127;
-    int maskBits = max(0, 23 - 9 - exponent);
+    int maskBits = max(0, 23 - 10 - exponent);
     int mask = -1 << maskBits;
     return intBitsToFloat(i & mask);
 }

@@ -9,7 +9,7 @@
 
 */
 //Declare GL version.
-#version 120
+#version 430
 
 //Diffuse (color) texture.
 uniform sampler2D texture;
@@ -24,19 +24,53 @@ varying vec4 color;
 //Diffuse texture coordinates.
 varying vec2 coord0;
 
+float rnd(float n)
+{
+    int i = floatBitsToInt(n);
+    int exponent = ((i >> 23) & 0xFF) - 127;
+    int maskBits = max(0, 23 - 9 - exponent);
+    int mask = -1 << maskBits;
+    return intBitsToFloat(i & mask);
+}
+
+vec2 rndv2(vec2 v)
+{
+    return vec2(rnd(v.x), rnd(v.y));
+}
+
+vec3 rndv3(vec3 v)
+{
+    return vec3(rnd(v.x), rnd(v.y), rnd(v.z));
+}
+
+vec4 rndv4(vec4 v)
+{
+    return vec4(rnd(v.x), rnd(v.y), rnd(v.z), rnd(v.w));
+}
+
+mat3 rndm3(mat3 n)
+{
+    return mat3(rndv3(n[0]), rndv3(n[1]), rndv3(n[2]));
+}
+
+mat4 rndm4(mat4 n)
+{
+    return mat4(rndv4(n[0]), rndv4(n[1]), rndv4(n[2]), rndv4(n[3]));
+}
+
 void main()
 {
     //Visibility amount.
-    vec3 light = vec3(1.-blindness);
+    vec3 light = rndv3(vec3(1.-blindness));
     //Sample texture times Visibility.
-    vec4 col = color * vec4(light,1) * texture2D(texture,coord0);
+    vec4 col = rndv4(rndv4(color) * vec4(light,1) * texture2D(texture,coord0));
 
     //Calculate fog intensity in or out of water.
-    float fog = (isEyeInWater>0) ? 1.-exp(-gl_FogFragCoord * gl_Fog.density):
-    clamp((gl_FogFragCoord-gl_Fog.start) * gl_Fog.scale, 0., 1.);
+    //float fog = (isEyeInWater>0) ? 1.-exp(-gl_FogFragCoord * gl_Fog.density):
+    //clamp((gl_FogFragCoord-gl_Fog.start) * gl_Fog.scale, 0., 1.);
 
     //Apply the fog.
-    col.rgb = mix(col.rgb, gl_Fog.color.rgb, fog);
+    //col.rgb = mix(col.rgb, gl_Fog.color.rgb, fog);
 
     //Output the result.
     gl_FragData[0] = col;

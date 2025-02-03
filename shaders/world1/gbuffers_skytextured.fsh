@@ -11,6 +11,9 @@
 //Declare GL version.
 #version 430
 
+//Diffuse (color) texture.
+uniform sampler2D texture;
+
 //0-1 amount of blindness.
 uniform float blindness;
 //0 = default, 1 = water, 2 = lava.
@@ -18,12 +21,14 @@ uniform int isEyeInWater;
 
 //Vertex color.
 varying vec4 color;
+//Diffuse texture coordinates.
+varying vec2 coord0;
 
 float rnd(float n)
 {
     int i = floatBitsToInt(n);
     int exponent = ((i >> 23) & 0xFF) - 127;
-    int maskBits = max(0, 23 - 9 - exponent);
+    int maskBits = max(0, 23 - 10 - exponent);
     int mask = -1 << maskBits;
     return intBitsToFloat(i & mask);
 }
@@ -45,15 +50,11 @@ vec4 rndv4(vec4 v)
 
 void main()
 {
-    vec4 col = rndv4(color);
-
-    //Calculate fog intensity in or out of water.
-    //float fog = rnd((isEyeInWater>0) ? 1.-exp(-gl_FogFragCoord * gl_Fog.density):
-    //clamp((gl_FogFragCoord-gl_Fog.start) * gl_Fog.scale, 0., 1.));
-
-    //Apply the fog.
-    //col.rgb = rndv3(mix(col.rgb, gl_Fog.color.rgb, fog));
+    //Visibility amount.
+    vec3 light = rndv3(vec3(1.-blindness));
+    //Sample texture times Visibility.
+    vec4 col = rndv4(rndv4(color) * vec4(light,1) * texture2D(texture,rndv2(coord0)));
 
     //Output the result.
-    gl_FragData[0] = rndv4(col * vec4(vec3(1.-blindness),1));
+    gl_FragData[0] = col;
 }

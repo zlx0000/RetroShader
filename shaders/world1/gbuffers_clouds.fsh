@@ -11,12 +11,18 @@
 //Declare GL version.
 #version 430
 
-//Model * view matrix and it's inverse.
-uniform mat4 gbufferModelView;
-uniform mat4 gbufferModelViewInverse;
+//Diffuse (color) texture.
+uniform sampler2D texture;
 
-//Pass vertex information to fragment shader.
+//0-1 amount of blindness.
+uniform float blindness;
+//0 = default, 1 = water, 2 = lava.
+uniform int isEyeInWater;
+
+//Vertex color.
 varying vec4 color;
+//Diffuse texture coordinates.
+varying vec2 coord0;
 
 float rnd(float n)
 {
@@ -54,20 +60,18 @@ mat4 rndm4(mat4 n)
 
 void main()
 {
-    //Calculate world space position.
-    mat4 glModelViewMatrixRnd = rndm4(gl_ModelViewMatrix);
-    vec4 glVertexRnd = rndv4(gl_Vertex);
-    mat4 gbufferModelViewRnd = rndm4(gbufferModelView);
-    mat4 gbufferModelViewInverseRnd = rndm4(gbufferModelViewInverse);
-    mat4 glProjectionMatrixRnd = rndm4(gl_ProjectionMatrix);
+    //Visibility amount.
+    vec3 light = rndv3(vec3(1.-blindness));
+    //Sample texture times Visibility.
+    vec4 col = rndv4(rndv4(color) * vec4(light,1) * texture2D(texture,coord0));
 
-    vec3 pos = rndv3((glModelViewMatrixRnd * glVertexRnd).xyz);
-    pos = rndv3((gbufferModelViewInverseRnd * vec4(pos,1)).xyz);
+    //Calculate fog intensity in or out of water.
+    //float fog = (isEyeInWater>0) ? 1.-exp(-gl_FogFragCoord * gl_Fog.density):
+    //clamp((gl_FogFragCoord-gl_Fog.start) * gl_Fog.scale, 0., 1.);
 
-    //Output position and fog to fragment shader.
-    gl_Position = rndv4(glProjectionMatrixRnd * gbufferModelViewRnd * vec4(pos,1));
-    gl_FogFragCoord = rnd(length(pos));
+    //Apply the fog.
+    //col.rgb = mix(col.rgb, gl_Fog.color.rgb, fog);
 
-    //Output color to fragment shader.
-    color = rndv4(gl_Color);
+    //Output the result.
+    gl_FragData[0] = col;
 }
